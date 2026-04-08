@@ -225,15 +225,10 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [currentView, setCurrentView] = useState<string>('entry'); 
 
-  // --- ربط الأنواع بالـ State ---
   const [players, setPlayers] = useState<Player[]>([]);
   const [records, setRecords] = useState<AthleteRecord[]>([]);
   const [testCategories, setTestCategories] = useState<TestCategories>(DEFAULT_TEST_CATEGORIES);
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
-  
-  const [newPlayerName, setNewPlayerName] = useState<string>('');
-  const [newPlayerYear, setNewPlayerYear] = useState<string>('');
-  const [newPlayerSpecialty, setNewPlayerSpecialty] = useState<string>(PLAYER_SPECIALTIES[0]);
   
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState<boolean>(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
@@ -247,7 +242,6 @@ export default function App() {
 
   const [playerToDelete, setPlayerToDelete] = useState<string | null>(null);
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
-
   const [cellEditModal, setCellEditModal] = useState<CellEditModalData | null>(null);
 
   const [selectedCategory, setSelectedCategory] = useState<string>('السرعة');
@@ -267,11 +261,9 @@ export default function App() {
 
   const theme = THEMES[themeKey][isDarkMode ? 'dark' : 'light'];
 
-  // --- استرجاع البيانات من Supabase ---
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // جلب الإعدادات (الاختبارات المخصصة)
         const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 'categories').single();
         if (settingsData && settingsData.data) {
           setTestCategories(settingsData.data);
@@ -279,19 +271,16 @@ export default function App() {
           await supabase.from('settings').insert([{ id: 'categories', data: DEFAULT_TEST_CATEGORIES }]);
         }
 
-        // جلب اللاعبين
         const { data: playersData } = await supabase.from('players').select('*');
         if (playersData) {
           setPlayers(playersData as Player[]);
         }
 
-        // جلب الأرقام
         const { data: recordsData } = await supabase.from('records').select('*');
         if (recordsData) {
           setRecords(recordsData as AthleteRecord[]);
         }
 
-        // --- حقن البيانات الأولية (إذا كانت القاعدة فارغة تماماً) ---
         if ((!playersData || playersData.length === 0) && (!recordsData || recordsData.length === 0)) {
           const newPlayers: Player[] = [];
           const newRecords: AthleteRecord[] = [];
@@ -334,14 +323,12 @@ export default function App() {
 
     fetchData();
 
-    // استرجاع الثيم المحلي
     const savedTheme = localStorage.getItem('athlete_theme');
     const savedMode = localStorage.getItem('athlete_mode');
     if (savedTheme && THEMES[savedTheme]) setThemeKey(savedTheme);
     if (savedMode !== null) setIsDarkMode(JSON.parse(savedMode));
   }, []);
 
-  // حفظ حالة الثيم محلياً فقط
   useEffect(() => {
     localStorage.setItem('athlete_theme', themeKey);
     localStorage.setItem('athlete_mode', JSON.stringify(isDarkMode));
@@ -370,7 +357,6 @@ export default function App() {
     return new Date().getFullYear() - year;
   };
 
-  // ---- إدارة الاختبارات (Supabase) ----
   const handleAddNewTest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTestName.trim()) return;
@@ -384,7 +370,6 @@ export default function App() {
     setIsTestModalOpen(false);
   };
 
-  // ---- إدارة اللاعبين (Supabase) ----
   const openAddPlayerModal = () => {
     setEditingPlayerId(null);
     setEditPlayerName('');
@@ -422,6 +407,8 @@ export default function App() {
     setIsPlayerModalOpen(false);
   };
 
+  const cancelEditPlayer = () => setIsPlayerModalOpen(false);
+
   const confirmDeletePlayer = async () => {
     if (playerToDelete) {
       setPlayers(players.filter(p => p.id !== playerToDelete));
@@ -435,7 +422,6 @@ export default function App() {
     }
   };
 
-  // ---- إدارة السجلات (Supabase) ----
   const handleAddRecord = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activePlayerId || !testResult) return;
@@ -464,6 +450,8 @@ export default function App() {
     await supabase.from('records').update({ result: parseFloat(editRecordResult), date: editRecordDate }).eq('id', editingRecordId);
     setEditingRecordId(null);
   };
+
+  const cancelEditRecord = () => setEditingRecordId(null);
 
   const confirmDeleteRecord = async () => {
     if (recordToDelete) {
@@ -553,7 +541,6 @@ export default function App() {
     }
   };
 
-  // شاشة تحميل أنيقة أثناء جلب البيانات من السحابة
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white" dir="rtl">
@@ -783,7 +770,7 @@ export default function App() {
                           <div>
                             <span className="font-bold text-base drop-shadow-sm">{p.name}</span>
                             <span className={`text-xs mt-1 block ${activePlayerId === p.id ? 'text-white/80' : theme.textMuted}`}>
-                              {p.specialty ? `لاعب ${p.specialty}` : 'تخصص غير محدد'} • {calculateAge(p.dob)} سنة
+                              {p.specialty ? `لاعب ${p.specialty}` : 'تخصص غير محدد'} • {calculateAge(p.dob || '')} سنة
                             </span>
                           </div>
                           {activePlayerId === p.id && <Activity className="w-6 h-6 mr-3 drop-shadow-md" />}
@@ -879,7 +866,7 @@ export default function App() {
                         className={`w-full text-right px-4 py-3 rounded-xl transition-all duration-300 ${activePlayerId === p.id ? `${theme.primaryBtn} scale-[1.03]` : `${theme.inputBg} ${theme.textMuted} hover:${theme.primaryText} border ${theme.border} hover:shadow-lg`}`}
                       >
                         <span className="font-bold block drop-shadow-sm">{p.name}</span>
-                        <span className={`text-xs mt-1 block ${activePlayerId === p.id ? 'opacity-80' : ''}`}>{p.specialty ? `لاعب ${p.specialty}` : 'غير محدد'} • {calculateAge(p.dob)} سنة</span>
+                        <span className={`text-xs mt-1 block ${activePlayerId === p.id ? 'opacity-80' : ''}`}>{p.specialty ? `لاعب ${p.specialty}` : 'غير محدد'} • {calculateAge(p.dob || '')} سنة</span>
                       </button>
                     ))}
                   </div>
@@ -903,7 +890,7 @@ export default function App() {
                           </div>
                           <div className="text-left flex flex-row sm:flex-col items-end gap-2">
                             <div className={`px-4 py-1.5 rounded-lg bg-black/20 backdrop-blur-md border ${theme.border} font-bold text-sm shadow-inner`}>
-                              العمر: {calculateAge(activePlayer?.dob)}
+                              العمر: {calculateAge(activePlayer?.dob || '')}
                             </div>
                             <div className={`px-4 py-1.5 rounded-lg bg-black/20 backdrop-blur-md border ${theme.border} font-bold text-sm shadow-inner`}>
                               {activePlayer?.specialty ? `لاعب ${activePlayer.specialty}` : 'تخصص غير محدد'}
@@ -911,7 +898,7 @@ export default function App() {
                           </div>
                         </div>
                         <div className="flex justify-center items-center drop-shadow-2xl">
-                          <RadarChart records={records} playerId={activePlayerId} testCategories={testCategories} theme={theme} />
+                          <RadarChart records={records} playerId={activePlayerId} theme={theme} />
                         </div>
                       </div>
 
@@ -1054,7 +1041,7 @@ export default function App() {
                     </div>
                     <div className="flex gap-4 pt-4">
                       <button type="submit" className={`flex-1 ${theme.primaryBtn} py-3 rounded-xl font-bold transition-all shadow-lg`}>حفظ اللاعب</button>
-                      <button type="button" onClick={() => setIsPlayerModalOpen(false)} className={`flex-1 bg-current/10 hover:bg-current/20 backdrop-blur-md py-3 rounded-xl font-bold transition-all`}>إلغاء</button>
+                      <button type="button" onClick={cancelEditPlayer} className={`flex-1 bg-current/10 hover:bg-current/20 backdrop-blur-md py-3 rounded-xl font-bold transition-all`}>إلغاء</button>
                     </div>
                   </form>
                 </div>
@@ -1154,7 +1141,7 @@ export default function App() {
   );
 }
 
-function RadarChart({ records, playerId, testCategories, theme }: { records: AthleteRecord[], playerId: string, testCategories: TestCategories, theme: any }) {
+function RadarChart({ records, playerId, theme }: { records: AthleteRecord[], playerId: string, theme: any }) {
   const categories = ['السرعة', 'الوثب', 'القوة'];
   
   const stats = categories.map(cat => {
