@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { UserPlus, User, Activity, TrendingUp, Save, Trash2, Calendar, Sun, Moon, Target, Shield, Edit2, Check, X, AlertTriangle, Plus, Search, Info } from 'lucide-react';
+import { UserPlus, User, Activity, TrendingUp, Save, Trash2, Calendar, Sun, Moon, Target, Shield, Edit2, X, AlertTriangle, Plus, Search, Info } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 // --- تهيئة Supabase ---
@@ -54,7 +54,6 @@ const BENCHMARKS_MANUAL: Record<string, Record<string, number>> = {
   }
 };
 
-// --- دالة استخراج معاملات السن ---
 function getAgeFactors(age: number) {
   let sFac = 1, pFac = 1;
   if (age < 12) { sFac = 1.30; pFac = 0.40; }
@@ -65,7 +64,6 @@ function getAgeFactors(age: number) {
   return { speed: sFac, power: pFac };
 }
 
-// --- دالة حساب السكور للبوصلة ---
 function getBenchmarkScore(test: string, category: string, result: number, gender: string, age: number): number {
   const base = BENCHMARKS_MANUAL[gender]?.[test] || BENCHMARKS_MANUAL['male']?.[test]; 
   if (!base) return 0;
@@ -82,7 +80,6 @@ function getBenchmarkScore(test: string, category: string, result: number, gende
   return Math.min(Math.max(score, 0), 120); 
 }
 
-// --- إعدادات الثيمات (CSS Patterns) ---
 const THEMES: Record<string, any> = {
   solo: {
     name: 'سولو ليفيلينج', icon: '🗡️',
@@ -229,17 +226,14 @@ export default function App() {
 
   const [playerToDelete, setPlayerToDelete] = useState<string | null>(null);
 
-  // --- حالات إدخال وتعديل السجلات المتطورة ---
   const [massEntryMode, setMassEntryMode] = useState<'new' | 'edit' | null>(null);
   const [massEditValues, setMassEditValues] = useState<Record<string, { result: string, id: string | null }>>({});
   const [massEditDate, setMassEditDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
-  // --- حالات التبويبات للرسومات ---
   const [chartTab, setChartTab] = useState<string>('overall'); 
   const [reportCategory, setReportCategory] = useState<string>('السرعة');
   const [reportTest, setReportTest] = useState<string>(testCategories['السرعة'][0]);
 
-  // --- حالات صفحة Benchmarks المراجع ---
   const [benchmarkAge, setBenchmarkAge] = useState<number>(20);
 
   const theme = THEMES[themeKey][isDarkMode ? 'dark' : 'light'];
@@ -333,7 +327,6 @@ export default function App() {
     e.preventDefault();
     if (!editPlayerName.trim() || !editPlayerYear) return;
     
-    // منع تكرار الأسماء
     const isDuplicate = players.some(p => p.name.trim().toLowerCase() === editPlayerName.trim().toLowerCase() && p.id !== editingPlayerId);
     if (isDuplicate) {
       setNameError('هذا الاسم مسجل بالفعل! الرجاء اختيار اسم مختلف.');
@@ -365,7 +358,6 @@ export default function App() {
     }
   };
 
-  // --- دوال الجلسات وتصحيح الأرقام ---
   const startMassNew = () => {
     if (!activePlayerId) return;
     const initialValues: Record<string, { result: string, id: string | null }> = {};
@@ -475,7 +467,6 @@ export default function App() {
       <div className={`min-h-screen transition-colors duration-500 ${theme.bgPattern} gpu-accelerate`} dir="rtl">
         <div className={`min-h-screen ${theme.text} flex flex-col gpu-accelerate`}>
           
-          {/* --- Header --- */}
           <header className={`${theme.header} py-4 px-4 sm:px-6 sticky top-0 z-40`}>
             <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -501,7 +492,6 @@ export default function App() {
             </div>
           </header>
 
-          {/* --- Navigation --- */}
           <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 pt-6 overflow-x-auto no-scrollbar">
             <div className="flex gap-2 sm:gap-4 border-b border-current/10 pb-px min-w-max">
               <button onClick={() => setCurrentView('entry')} className={`flex items-center gap-2 px-6 py-3 font-bold text-sm sm:text-base rounded-t-xl transition-colors ${currentView === 'entry' ? `${theme.card} ${theme.primaryText} border-t border-x border-b-0 border-current/20 relative top-[1px]` : `opacity-60 hover:opacity-100 hover:bg-current/5`}`}>
@@ -752,7 +742,6 @@ export default function App() {
                              reportTest={reportTest}
                              theme={theme}
                              calculateAge={calculateAge}
-                             testCategories={testCategories}
                           />
                         </div>
                       </div>
@@ -762,7 +751,7 @@ export default function App() {
               </div>
             )}
 
-            {/* ================== شاشة لوحة المراجع الديناميكية (Benchmarks Table) ================== */}
+            {/* ================== شاشة لوحة المراجع الديناميكية ================== */}
             {currentView === 'reference' && (
               <div className={`${theme.card} p-6 sm:p-8 rounded-3xl border ${theme.border}`}>
                 <div className="mb-8 border-b border-current/10 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -783,7 +772,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* بوكس شرح المعادلة */}
                 <div className="mb-8 bg-blue-500/10 border border-blue-500/30 p-5 rounded-2xl">
                   <h4 className="font-bold flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400"><Info className="w-5 h-5"/> كيف يتم حساب الأرقام لسن {benchmarkAge}؟</h4>
                   <p className="text-sm opacity-80 mb-2">التطبيق يمتلك قاعدة بيانات للبالغين (20 سنة فأكثر)، ويقوم بضربها في مُعامل (Age Factor) لتقليل أو زيادة التارجت حسب السن.</p>
@@ -794,7 +782,6 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* جدول الأولاد الديناميكي */}
                   <div className="bg-black/5 p-4 rounded-2xl border border-current/10">
                     <h3 className="font-black text-xl mb-4 text-blue-500 border-b border-current/10 pb-2">التارجت - أولاد</h3>
                     <div className="overflow-x-auto no-scrollbar">
@@ -822,7 +809,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* جدول البنات الديناميكي */}
                   <div className="bg-black/5 p-4 rounded-2xl border border-current/10">
                     <h3 className="font-black text-xl mb-4 text-pink-500 border-b border-current/10 pb-2">التارجت - بنات</h3>
                     <div className="overflow-x-auto no-scrollbar">
@@ -1023,14 +1009,14 @@ function RadarChart({ records, player, testCategories, theme, calculateAge }: { 
             {stats.map((s, i) => <circle key={i} cx={getCoordinates(s.score, i).x} cy={getCoordinates(s.score, i).y} r="6" fill="#fff" stroke={theme.radarStroke} strokeWidth="2.5" />)}
           </>
         ) : (
-          <text x={center} y={center} textAnchor="middle" className="text-sm opacity-60 font-bold fill-current">لا توجد أرقام للتحليل</text>
+          <text x={center} y={center} textAnchor="middle" className="text-sm opacity-60 font-bold fill-current">لا توجد أرقام مسجلة للتحليل</text>
         )}
       </svg>
     </div>
   );
 }
 
-function ProgressChart({ records, player, chartTab, reportCategory, reportTest, theme, calculateAge, testCategories }: any) {
+function ProgressChart({ records, player, chartTab, reportCategory, reportTest, theme, calculateAge }: any) {
   const { pathData, points, height, isSpeedMode } = useMemo(() => {
     const age = calculateAge(player.dob || '');
     const gender = player.gender || 'male';
@@ -1146,4 +1132,4 @@ function ProgressChart({ records, player, chartTab, reportCategory, reportTest, 
       </div>
     </div>
   );
-} 
+}
