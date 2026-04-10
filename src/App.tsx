@@ -1146,4 +1146,4 @@ function ProgressChart({ records, player, chartTab, reportCategory, reportTest, 
       </div>
     </div>
   );
-}
+} 
