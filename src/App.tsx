@@ -211,7 +211,6 @@ export default function App() {
   const [testCategories, setTestCategories] = useState<TestCategories>(DEFAULT_TEST_CATEGORIES);
   
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
-  
   const [searchQuery, setSearchQuery] = useState<string>(''); 
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState<boolean>(false);
   
@@ -448,10 +447,7 @@ export default function App() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white" dir="rtl">
-        <div className="flex flex-col items-center gap-6 transform translate-z-0">
-           <Activity className="w-16 h-16 animate-pulse text-indigo-500 drop-shadow-[0_0_15px_rgba(99,102,241,0.8)]" />
-           <h2 className="text-2xl font-bold animate-pulse">جاري جلب بيانات الفريق من السحابة...</h2>
-        </div>
+        <Activity className="w-16 h-16 animate-pulse text-indigo-500 drop-shadow-[0_0_15px_rgba(99,102,241,0.8)]" />
       </div>
     );
   }
@@ -474,7 +470,6 @@ export default function App() {
       <div className={`min-h-screen transition-colors duration-500 ${theme.bgPattern} gpu-accelerate`} dir="rtl">
         <div className={`min-h-screen ${theme.text} flex flex-col gpu-accelerate`}>
           
-          {/* --- Header --- */}
           <header className={`${theme.header} py-4 px-4 sm:px-6 sticky top-0 z-40`}>
             <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -500,7 +495,6 @@ export default function App() {
             </div>
           </header>
 
-          {/* --- Navigation --- */}
           <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 pt-6 overflow-x-auto no-scrollbar">
             <div className="flex gap-2 sm:gap-4 border-b border-current/10 pb-px min-w-max">
               <button onClick={() => setCurrentView('entry')} className={`flex items-center gap-2 px-6 py-3 font-bold text-sm sm:text-base rounded-t-xl transition-colors ${currentView === 'entry' ? `${theme.card} ${theme.primaryText} border-t border-x border-b-0 border-current/20 relative top-[1px]` : `opacity-60 hover:opacity-100 hover:bg-current/5`}`}>
@@ -517,7 +511,6 @@ export default function App() {
 
           <main className="max-w-6xl mx-auto w-full p-4 sm:p-6 pt-6 relative flex-grow pb-12">
             
-            {/* --- شريط البحث المنسدل الذكي (Combobox) --- */}
             {(currentView === 'entry' || currentView === 'dashboard') && (
               <div className="relative mb-8 z-30">
                  <div className={`flex items-center ${theme.card} border ${theme.border} rounded-2xl px-4 py-3 shadow-md focus-within:ring-2 ${theme.ring} transition-all`}>
@@ -573,7 +566,6 @@ export default function App() {
               </div>
             )}
 
-            {/* ================== شاشة إدارة وتسجيل البيانات ================== */}
             {currentView === 'entry' && (
               <div className={`w-full ${theme.card} p-5 sm:p-10 rounded-3xl border ${theme.border} shadow-xl min-h-[500px]`}>
                   {!activePlayerId ? (
@@ -584,7 +576,6 @@ export default function App() {
                     </div>
                   ) : (
                     <>
-                      {/* --- هيدر اللاعب (فيه زراير التعديل والحذف) --- */}
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 border-b border-current/10 pb-8">
                         <div>
                           <h2 className={`text-3xl font-black mb-3 ${theme.primaryText}`}>{activePlayer?.name}</h2>
@@ -685,7 +676,6 @@ export default function App() {
               </div>
             )}
 
-            {/* ================== شاشة التحليل والرسومات ================== */}
             {currentView === 'dashboard' && (
               <div className={`w-full ${theme.card} p-5 sm:p-10 rounded-3xl border ${theme.border} shadow-xl min-h-[500px]`}>
                   {!activePlayerId ? (
@@ -708,7 +698,6 @@ export default function App() {
                       </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* البوصلة */}
                         <div className="bg-black/5 p-6 sm:p-8 rounded-3xl border border-current/10">
                            <h2 className={`text-xl font-black mb-2 flex items-center gap-2 opacity-90`}>
                              <Shield className="w-6 h-6" /> البوصلة (مقارنة بالمعايير العالمية)
@@ -719,7 +708,6 @@ export default function App() {
                            </div>
                         </div>
 
-                        {/* منحنى التطور */}
                         <div className="bg-black/5 p-6 sm:p-8 rounded-3xl border border-current/10 flex flex-col">
                            <h2 className={`text-xl font-black mb-6 flex items-center gap-2 opacity-90`}>
                              <TrendingUp className="w-6 h-6" /> منحنى التطور الزمني
@@ -735,10 +723,10 @@ export default function App() {
 
                            {chartTab === 'specific' && (
                               <div className={`flex gap-4 mb-6`}>
-                                <select value={reportCategory} onChange={(e) => setReportCategory(e.target.value)} className={`flex-1 border ${theme.border} ${theme.inputBg} rounded-xl px-3 py-2 text-xs font-bold focus:outline-none ${theme.ring} [&>option]:bg-slate-800 [&>option]:text-white`}>
+                                <select value={reportCategory} onChange={(e) => setReportCategory(e.target.value)} className={`flex-1 border ${theme.border} ${theme.inputBg} rounded-xl px-3 py-2 text-sm font-bold focus:outline-none ${theme.ring} [&>option]:bg-slate-800 [&>option]:text-white`}>
                                   {Object.keys(testCategories).map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                 </select>
-                                <select value={reportTest} onChange={(e) => setReportTest(e.target.value)} className={`flex-1 border ${theme.border} ${theme.inputBg} rounded-xl px-3 py-2 text-xs font-bold focus:outline-none ${theme.ring} [&>option]:bg-slate-800 [&>option]:text-white`}>
+                                <select value={reportTest} onChange={(e) => setReportTest(e.target.value)} className={`flex-1 border ${theme.border} ${theme.inputBg} rounded-xl px-3 py-2 text-sm font-bold focus:outline-none ${theme.ring} [&>option]:bg-slate-800 [&>option]:text-white`}>
                                   {testCategories[reportCategory]?.map((test: string) => <option key={test} value={test}>{test}</option>)}
                                 </select>
                               </div>
@@ -753,7 +741,6 @@ export default function App() {
                                 reportTest={reportTest}
                                 theme={theme}
                                 calculateAge={calculateAge}
-                                testCategories={testCategories}
                              />
                            </div>
                         </div>
@@ -763,7 +750,6 @@ export default function App() {
               </div>
             )}
 
-            {/* ================== شاشة لوحة المراجع الديناميكية (Benchmarks Table) ================== */}
             {currentView === 'reference' && (
               <div className={`${theme.card} p-6 sm:p-8 rounded-3xl border ${theme.border}`}>
                 <div className="mb-8 border-b border-current/10 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -784,7 +770,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* بوكس شرح المعادلة */}
                 <div className="mb-8 bg-blue-500/10 border border-blue-500/30 p-5 rounded-2xl">
                   <h4 className="font-bold flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400"><Info className="w-5 h-5"/> كيف يتم حساب الأرقام لسن {benchmarkAge}؟</h4>
                   <p className="text-sm opacity-80 mb-2">التطبيق يمتلك قاعدة بيانات للبالغين (20 سنة فأكثر)، ويقوم بضربها في مُعامل (Age Factor) لتقليل أو زيادة التارجت حسب السن.</p>
@@ -795,7 +780,6 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* جدول الأولاد الديناميكي */}
                   <div className="bg-black/5 p-4 rounded-2xl border border-current/10">
                     <h3 className="font-black text-xl mb-4 text-blue-500 border-b border-current/10 pb-2">التارجت - أولاد</h3>
                     <div className="overflow-x-auto no-scrollbar">
@@ -823,7 +807,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* جدول البنات الديناميكي */}
                   <div className="bg-black/5 p-4 rounded-2xl border border-current/10">
                     <h3 className="font-black text-xl mb-4 text-pink-500 border-b border-current/10 pb-2">التارجت - بنات</h3>
                     <div className="overflow-x-auto no-scrollbar">
@@ -1031,7 +1014,7 @@ function RadarChart({ records, player, testCategories, theme, calculateAge }: { 
   );
 }
 
-function ProgressChart({ records, player, chartTab, reportCategory, reportTest, theme, calculateAge, testCategories }: any) {
+function ProgressChart({ records, player, chartTab, reportCategory, reportTest, theme, calculateAge }: any) {
   const { pathData, points, height, isSpeedMode } = useMemo(() => {
     const age = calculateAge(player.dob || '');
     const gender = player.gender || 'male';
