@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { UserPlus, User, Activity, TrendingUp, Save, Trash2, Calendar, Sun, Moon, Target, Shield, Edit2, X, AlertTriangle, Plus, Search, Info } from 'lucide-react';
+import { UserPlus, User, Activity, TrendingUp, Save, Trash2, Calendar, Sun, Moon, Target, Shield, Edit2, Check, X, AlertTriangle, Plus, Search, Info } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 // --- تهيئة Supabase ---
@@ -80,6 +80,7 @@ function getBenchmarkScore(test: string, category: string, result: number, gende
   return Math.min(Math.max(score, 0), 120); 
 }
 
+// --- إعدادات الثيمات (CSS Patterns) ---
 const THEMES: Record<string, any> = {
   solo: {
     name: 'سولو ليفيلينج', icon: '🗡️',
@@ -210,7 +211,9 @@ export default function App() {
   const [testCategories, setTestCategories] = useState<TestCategories>(DEFAULT_TEST_CATEGORIES);
   
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
+  
   const [searchQuery, setSearchQuery] = useState<string>(''); 
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState<boolean>(false);
   
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState<boolean>(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
@@ -432,6 +435,7 @@ export default function App() {
   const activePlayer = useMemo(() => players.find((p: Player) => p.id === activePlayerId), [players, activePlayerId]);
 
   const filteredPlayersList = useMemo(() => {
+    if (!searchQuery.trim()) return [];
     return players.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [players, searchQuery]);
 
@@ -444,7 +448,10 @@ export default function App() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white" dir="rtl">
-        <Activity className="w-16 h-16 animate-pulse text-indigo-500 drop-shadow-[0_0_15px_rgba(99,102,241,0.8)]" />
+        <div className="flex flex-col items-center gap-6 transform translate-z-0">
+           <Activity className="w-16 h-16 animate-pulse text-indigo-500 drop-shadow-[0_0_15px_rgba(99,102,241,0.8)]" />
+           <h2 className="text-2xl font-bold animate-pulse">جاري جلب بيانات الفريق من السحابة...</h2>
+        </div>
       </div>
     );
   }
@@ -467,6 +474,7 @@ export default function App() {
       <div className={`min-h-screen transition-colors duration-500 ${theme.bgPattern} gpu-accelerate`} dir="rtl">
         <div className={`min-h-screen ${theme.text} flex flex-col gpu-accelerate`}>
           
+          {/* --- Header --- */}
           <header className={`${theme.header} py-4 px-4 sm:px-6 sticky top-0 z-40`}>
             <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -492,10 +500,11 @@ export default function App() {
             </div>
           </header>
 
+          {/* --- Navigation --- */}
           <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 pt-6 overflow-x-auto no-scrollbar">
             <div className="flex gap-2 sm:gap-4 border-b border-current/10 pb-px min-w-max">
               <button onClick={() => setCurrentView('entry')} className={`flex items-center gap-2 px-6 py-3 font-bold text-sm sm:text-base rounded-t-xl transition-colors ${currentView === 'entry' ? `${theme.card} ${theme.primaryText} border-t border-x border-b-0 border-current/20 relative top-[1px]` : `opacity-60 hover:opacity-100 hover:bg-current/5`}`}>
-                <Save className="w-5 h-5" /> إدارة و تسجيل البيانات
+                <Save className="w-5 h-5" /> بروفايل اللاعب
               </button>
               <button onClick={() => setCurrentView('dashboard')} className={`flex items-center gap-2 px-6 py-3 font-bold text-sm sm:text-base rounded-t-xl transition-colors ${currentView === 'dashboard' ? `${theme.card} ${theme.primaryText} border-t border-x border-b-0 border-current/20 relative top-[1px]` : `opacity-60 hover:opacity-100 hover:bg-current/5`}`}>
                 <Target className="w-5 h-5" /> غرفة التحليل والرسومات
@@ -508,138 +517,153 @@ export default function App() {
 
           <main className="max-w-6xl mx-auto w-full p-4 sm:p-6 pt-6 relative flex-grow pb-12">
             
+            {/* --- شريط البحث المنسدل الذكي (Combobox) --- */}
+            {(currentView === 'entry' || currentView === 'dashboard') && (
+              <div className="relative mb-8 z-30">
+                 <div className={`flex items-center ${theme.card} border ${theme.border} rounded-2xl px-4 py-3 shadow-md focus-within:ring-2 ${theme.ring} transition-all`}>
+                   <Search className={`w-6 h-6 ${theme.textMuted} ml-3`} />
+                   <input
+                     type="text"
+                     placeholder="ابحث عن اسم اللاعب لعرض ملفه..."
+                     value={searchQuery}
+                     onChange={(e) => { setSearchQuery(e.target.value); setIsSearchDropdownOpen(true); }}
+                     onFocus={() => setIsSearchDropdownOpen(true)}
+                     className="w-full bg-transparent border-none outline-none font-black text-lg text-current placeholder:font-bold"
+                   />
+                   <button onClick={openAddPlayerModal} className={`mr-4 flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold ${theme.primaryBtn} hover:scale-105 transition-transform`}>
+                      <UserPlus className="w-4 h-4" /> إضافة لاعب
+                   </button>
+                 </div>
+
+                 {isSearchDropdownOpen && (
+                   <>
+                     <div className="fixed inset-0 z-40" onClick={() => setIsSearchDropdownOpen(false)}></div>
+                     <div className={`absolute top-full mt-3 w-full max-h-96 overflow-y-auto rounded-3xl border ${theme.border} ${theme.card} shadow-2xl p-3 z-50`}>
+                        <div className="flex justify-between items-center mb-3 px-3 pb-3 border-b border-current/10">
+                           <span className="text-sm font-bold opacity-60">نتائج البحث ({filteredPlayersList.length})</span>
+                           <button onClick={() => setIsSearchDropdownOpen(false)} className="opacity-50 hover:opacity-100 bg-black/10 p-1 rounded-lg"><X size={16}/></button>
+                        </div>
+                        {filteredPlayersList.length === 0 ? (
+                           <div className="p-8 text-center opacity-50 font-bold">لا يوجد لاعب بهذا الاسم</div>
+                        ) : (
+                           filteredPlayersList.map(p => (
+                             <button
+                               key={p.id}
+                               onClick={() => {
+                                 setActivePlayerId(p.id);
+                                 setIsSearchDropdownOpen(false);
+                                 setSearchQuery('');
+                                 setMassEntryMode(null);
+                               }}
+                               className={`w-full flex items-center justify-between p-4 rounded-2xl hover:bg-black/5 transition-colors mb-2 text-right border border-transparent hover:border-current/10`}
+                             >
+                                <div>
+                                  <span className="font-black text-lg block mb-1">{p.name}</span>
+                                  <span className={`text-xs font-bold ${theme.textMuted} bg-black/5 px-2 py-1 rounded-md`}>
+                                     {p.gender === 'female' ? 'بنت' : 'ولد'} • {p.specialty ? `لاعب ${p.specialty}` : 'عام'} • {calculateAge(p.dob || '')} سنة
+                                  </span>
+                                </div>
+                                {activePlayerId === p.id && <Check className="w-6 h-6 text-green-500 drop-shadow-md" />}
+                             </button>
+                           ))
+                        )}
+                     </div>
+                   </>
+                 )}
+              </div>
+            )}
+
             {/* ================== شاشة إدارة وتسجيل البيانات ================== */}
             {currentView === 'entry' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
-                <div className={`lg:col-span-4 ${theme.card} p-5 sm:p-6 rounded-3xl border ${theme.border} h-fit`}>
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className={`text-xl font-black flex items-center gap-2 ${theme.primaryText}`}>
-                      <User className="w-6 h-6" /> الفريق
-                    </h2>
-                    <button onClick={openAddPlayerModal} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold ${theme.primaryBtn}`}>
-                      <UserPlus className="w-4 h-4" /> إضافة
-                    </button>
-                  </div>
-                  
-                  <div className="relative mb-4">
-                    <Search className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme.textMuted}`} />
-                    <input 
-                      type="text" placeholder="بحث بالاسم..." 
-                      value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                      className={`w-full bg-black/5 border border-current/10 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-none ${theme.ring}`}
-                    />
-                  </div>
-                  
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                    {filteredPlayersList.length === 0 ? (
-                      <div className={`text-center py-6 border border-dashed ${theme.border} rounded-xl ${theme.textMuted} text-sm bg-black/5`}>لا يوجد نتائج</div>
-                    ) : (
-                      filteredPlayersList.map((p: Player) => (
-                        <div key={p.id} onClick={() => { setActivePlayerId(p.id); setMassEntryMode(null); }} className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${activePlayerId === p.id ? `${theme.primaryBtn} border-transparent scale-[1.02] shadow-lg` : `${theme.inputBg} ${theme.border} hover:border-current/30 hover:shadow-sm`}`}>
-                          <div>
-                            <span className="font-bold text-base">{p.name}</span>
-                            <span className={`text-xs mt-1 block ${activePlayerId === p.id ? 'text-white/80' : theme.textMuted}`}>
-                              {p.gender === 'female' ? 'بنت' : 'ولد'} • {p.specialty ? `لاعب ${p.specialty}` : 'عام'} • {calculateAge(p.dob || '')} سنة
-                            </span>
-                          </div>
-                          {activePlayerId === p.id ? (
-                            <Activity className="w-5 h-5 mr-3" />
-                          ) : (
-                            <div className="flex gap-1.5 opacity-60">
-                              <button onClick={(e) => { e.stopPropagation(); startEditPlayerInfo(p); }} className="p-1 hover:text-blue-500"><Edit2 className="w-4 h-4"/></button>
-                              <button onClick={(e) => { e.stopPropagation(); setPlayerToDelete(p.id); }} className="p-1 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className={`lg:col-span-8 ${theme.card} p-5 sm:p-8 rounded-3xl border ${theme.border}`}>
+              <div className={`w-full ${theme.card} p-5 sm:p-10 rounded-3xl border ${theme.border} shadow-xl min-h-[500px]`}>
                   {!activePlayerId ? (
-                    <div className={`flex flex-col items-center justify-center h-full min-h-[400px] ${theme.textMuted} text-center border border-dashed ${theme.border} rounded-3xl bg-black/5`}>
-                      <User className="w-20 h-20 opacity-20 mb-4" />
-                      <p className="font-bold text-lg">اختر لاعباً من القائمة لعرض أرقامه وتسجيل جلسات جديدة</p>
+                    <div className={`flex flex-col items-center justify-center h-full min-h-[400px] ${theme.textMuted} text-center`}>
+                      <User className="w-24 h-24 opacity-20 mb-6 drop-shadow-md" />
+                      <h2 className="font-black text-2xl mb-2 text-current opacity-80">لم يتم اختيار لاعب</h2>
+                      <p className="font-bold text-lg opacity-60">استخدم شريط البحث بالأعلى للبحث عن لاعب وعرض أرقامه.</p>
                     </div>
                   ) : (
                     <>
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 border-b border-current/10 pb-6">
+                      {/* --- هيدر اللاعب (فيه زراير التعديل والحذف) --- */}
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 border-b border-current/10 pb-8">
                         <div>
-                          <h2 className={`text-2xl font-black mb-1 ${theme.primaryText}`}>{activePlayer?.name}</h2>
-                          <div className={`text-sm font-bold ${theme.textMuted} bg-black/5 px-3 py-1 rounded-lg inline-block`}>
-                            {activePlayer?.gender === 'female' ? 'بنت' : 'ولد'} • {activePlayer?.specialty ? `لاعب ${activePlayer.specialty}` : 'عام'} • العمر: {calculateAge(activePlayer?.dob || '')}
+                          <h2 className={`text-3xl font-black mb-3 ${theme.primaryText}`}>{activePlayer?.name}</h2>
+                          <div className="flex items-center gap-3">
+                             <div className={`text-sm font-bold ${theme.textMuted} bg-black/5 px-4 py-1.5 rounded-xl inline-block border border-current/5`}>
+                               {activePlayer?.gender === 'female' ? 'بنت' : 'ولد'} • {activePlayer?.specialty ? `لاعب ${activePlayer.specialty}` : 'عام'} • العمر: {calculateAge(activePlayer?.dob || '')}
+                             </div>
+                             <button onClick={() => startEditPlayerInfo(activePlayer!)} className="p-2 rounded-xl bg-black/5 hover:bg-blue-500/20 hover:text-blue-500 transition-colors border border-current/5" title="تعديل بيانات اللاعب"><Edit2 className="w-4 h-4"/></button>
+                             <button onClick={() => setPlayerToDelete(activePlayer!.id)} className="p-2 rounded-xl bg-black/5 hover:bg-red-500/20 hover:text-red-500 transition-colors border border-current/5" title="حذف اللاعب"><Trash2 className="w-4 h-4"/></button>
                           </div>
                         </div>
                         
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-3">
                           {!massEntryMode ? (
                             <>
-                              <button onClick={startMassNew} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm ${theme.successBtn} shadow-lg hover:scale-105 transition-transform`}>
-                                <Plus className="w-4 h-4" /> أرقام جلسة جديدة 
+                              <button onClick={startMassNew} className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm ${theme.successBtn} shadow-lg hover:scale-105 transition-transform`}>
+                                <Plus className="w-5 h-5" /> جلسة أرقام جديدة 
                               </button>
-                              <button onClick={startMassEdit} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-black/5 hover:bg-black/10 transition-colors`}>
-                                <Edit2 className="w-4 h-4 opacity-60" /> تصحيح آخر أرقام 
+                              <button onClick={startMassEdit} className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm bg-black/5 hover:bg-black/10 transition-colors border border-current/10`}>
+                                <Edit2 className="w-5 h-5 opacity-60" /> تصحيح آخر أرقام 
                               </button>
                             </>
                           ) : (
-                            <button onClick={() => setMassEntryMode(null)} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors`}>
-                              <X className="w-4 h-4" /> إلغاء {massEntryMode === 'new' ? 'التسجيل' : 'التصحيح'}
+                            <button onClick={() => setMassEntryMode(null)} className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors border border-red-500/20`}>
+                              <X className="w-5 h-5" /> إلغاء {massEntryMode === 'new' ? 'التسجيل' : 'التصحيح'}
                             </button>
                           )}
                         </div>
                       </div>
 
                       {massEntryMode && (
-                        <div className="mb-6 p-5 bg-black/5 rounded-2xl border border-current/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-inner">
-                          <div className="flex items-center gap-3">
-                            <div className={`p-3 rounded-full ${massEntryMode === 'new' ? 'bg-green-500/20 text-green-500' : 'bg-blue-500/20 text-blue-500'}`}>
+                        <div className="mb-8 p-6 bg-black/5 rounded-3xl border border-current/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-inner">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-4 rounded-full shadow-md ${massEntryMode === 'new' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'}`}>
                               {massEntryMode === 'new' ? <Plus className="w-6 h-6" /> : <Edit2 className="w-6 h-6" />}
                             </div>
                             <div>
-                              <h4 className="font-black text-lg">{massEntryMode === 'new' ? 'تسجيل أرقام جلسة جديدة' : 'تصحيح آخر أرقام مسجلة'}</h4>
-                              <p className={`text-xs ${theme.textMuted}`}>{massEntryMode === 'new' ? 'أدخل أرقام الاختبارات. سيتم حفظها كجلسة جديدة في تاريخ اللاعب (لرسم منحنى التطور).' : 'استخدم هذا لتصحيح الأرقام الخاطئة التي تم إدخالها مسبقاً.'}</p>
+                              <h4 className="font-black text-xl mb-1">{massEntryMode === 'new' ? 'تسجيل أرقام جلسة جديدة' : 'تصحيح آخر أرقام مسجلة'}</h4>
+                              <p className={`text-sm font-semibold opacity-70`}>{massEntryMode === 'new' ? 'أدخل أرقام الاختبارات. سيتم حفظها كجلسة جديدة في تاريخ اللاعب (لرسم منحنى التطور).' : 'استخدم هذا لتصحيح الأرقام الخاطئة التي تم إدخالها مسبقاً.'}</p>
                             </div>
                           </div>
                           <div className="flex-shrink-0 w-full sm:w-auto">
-                            <label className="block text-xs font-bold mb-1 opacity-70 flex items-center gap-1"><Calendar className="w-3 h-3" /> تاريخ الجلسة:</label>
-                            <input type="date" value={massEditDate} onChange={(e) => setMassEditDate(e.target.value)} className={`bg-white/50 dark:bg-black/50 border border-current/20 px-3 py-2 rounded-xl font-bold outline-none text-current cursor-pointer w-full focus:ring-2 ${theme.ring}`} style={{ colorScheme: isDarkMode ? 'dark' : 'light' }} />
+                            <label className="block text-sm font-bold mb-2 opacity-70 flex items-center gap-1.5"><Calendar className="w-4 h-4" /> تاريخ الجلسة:</label>
+                            <input type="date" value={massEditDate} onChange={(e) => setMassEditDate(e.target.value)} className={`bg-white/80 dark:bg-black/50 border border-current/20 px-4 py-3 rounded-xl font-bold outline-none text-current cursor-pointer w-full focus:ring-2 ${theme.ring} shadow-sm`} style={{ colorScheme: isDarkMode ? 'dark' : 'light' }} />
                           </div>
                         </div>
                       )}
 
-                      <div className="space-y-8">
+                      <div className="space-y-10">
                         {Object.entries(testCategories).map(([catName, tests]) => (
                           <div key={catName}>
-                            <div className="flex justify-between items-center mb-4">
-                              <h3 className={`text-lg font-black flex items-center gap-2 opacity-80 border-r-4 ${theme.border} pr-3`}>
+                            <div className="flex justify-between items-center mb-5">
+                              <h3 className={`text-xl font-black flex items-center gap-2 opacity-90 border-r-4 ${theme.border} pr-4`}>
                                 {catName}
                               </h3>
-                              <button onClick={() => { setNewTestCategory(catName); setIsTestModalOpen(true); }} className="text-xs font-bold opacity-50 hover:opacity-100 flex items-center gap-1">
+                              <button onClick={() => { setNewTestCategory(catName); setIsTestModalOpen(true); }} className="text-xs font-bold opacity-50 hover:opacity-100 flex items-center gap-1 bg-black/5 px-3 py-1.5 rounded-lg">
                                 <Plus className="w-3 h-3"/> إضافة اختبار
                               </button>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                               {tests.map(test => {
                                 if (massEntryMode) {
                                   const val = massEditValues[test]?.result || '';
                                   return (
-                                    <div key={test} className={`${theme.inputBg} border ${theme.border} rounded-2xl p-3 flex flex-col focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-transparent ${theme.ring} transition-all shadow-sm`}>
-                                      <label className="text-[11px] font-bold opacity-60 mb-1.5 truncate text-center">{test}</label>
+                                    <div key={test} className={`${theme.inputBg} border ${theme.border} rounded-2xl p-4 flex flex-col focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-transparent ${theme.ring} transition-all shadow-sm`}>
+                                      <label className="text-xs font-bold opacity-60 mb-2 truncate text-center">{test}</label>
                                       <input 
                                         type="number" step="0.01" placeholder="-" 
                                         value={val} onChange={(e) => handleMassEditChange(test, e.target.value)}
-                                        className="w-full bg-black/5 rounded-lg py-2 border-none font-black text-xl outline-none text-center" 
+                                        className="w-full bg-black/5 rounded-xl py-3 border-none font-black text-2xl outline-none text-center shadow-inner" 
                                       />
                                     </div>
                                   );
                                 } else {
                                   const val = getLatestTestValue(activePlayerId, test);
                                   return (
-                                    <div key={test} className={`${theme.inputBg} border ${theme.border} rounded-2xl p-4 flex flex-col items-center justify-center shadow-sm`}>
-                                      <span className="text-[11px] font-bold opacity-60 mb-1 text-center line-clamp-1">{test}</span>
-                                      <span className={`font-black text-xl ${val !== '-' ? theme.primaryText : 'opacity-20'}`}>{val}</span>
+                                    <div key={test} className={`${theme.inputBg} border ${theme.border} rounded-2xl p-5 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-shadow`}>
+                                      <span className="text-xs font-bold opacity-60 mb-2 text-center line-clamp-1">{test}</span>
+                                      <span className={`font-black text-3xl drop-shadow-sm ${val !== '-' ? theme.primaryText : 'opacity-20'}`}>{val}</span>
                                     </div>
                                   );
                                 }
@@ -650,108 +674,96 @@ export default function App() {
                       </div>
 
                       {massEntryMode && (
-                        <div className="mt-8 pt-6 border-t border-current/10">
-                          <button onClick={saveMassAction} className={`w-full ${massEntryMode === 'new' ? theme.successBtn : theme.primaryBtn} py-4 rounded-2xl font-black text-lg flex items-center justify-center gap-2 hover:scale-[1.01] transition-transform shadow-xl`}>
-                            <Save className="w-6 h-6" /> {massEntryMode === 'new' ? 'تسجيل جلسة الأرقام الجديدة' : 'حفظ التصحيحات'}
+                        <div className="mt-10 pt-8 border-t border-current/10">
+                          <button onClick={saveMassAction} className={`w-full ${massEntryMode === 'new' ? theme.successBtn : theme.primaryBtn} py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-2 hover:scale-[1.01] transition-transform shadow-2xl`}>
+                            <Save className="w-7 h-7" /> {massEntryMode === 'new' ? 'تسجيل جلسة الأرقام الجديدة' : 'حفظ التصحيحات'}
                           </button>
                         </div>
                       )}
                     </>
                   )}
-                </div>
               </div>
             )}
 
             {/* ================== شاشة التحليل والرسومات ================== */}
             {currentView === 'dashboard' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
-                <div className={`lg:col-span-4 ${theme.card} p-5 rounded-3xl border ${theme.border} h-fit`}>
-                  <h3 className={`font-bold mb-4 ${theme.textMuted} flex items-center gap-2`}><Target className="w-5 h-5"/> اختر لاعباً للتحليل:</h3>
-                  <div className="relative mb-4">
-                    <Search className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme.textMuted}`} />
-                    <input type="text" placeholder="بحث بالاسم..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className={`w-full bg-black/5 border border-current/10 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-none ${theme.ring}`} />
-                  </div>
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                    {filteredPlayersList.map((p: Player) => (
-                      <button key={p.id} onClick={() => setActivePlayerId(p.id)} className={`w-full text-right px-4 py-3 rounded-2xl transition-all ${activePlayerId === p.id ? `${theme.primaryBtn} scale-[1.02] shadow-md` : `${theme.inputBg} ${theme.textMuted} hover:${theme.primaryText} border ${theme.border}`}`}>
-                        <span className="font-bold block">{p.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="lg:col-span-8 space-y-8">
+              <div className={`w-full ${theme.card} p-5 sm:p-10 rounded-3xl border ${theme.border} shadow-xl min-h-[500px]`}>
                   {!activePlayerId ? (
-                    <div className={`${theme.card} flex flex-col items-center justify-center h-96 rounded-3xl border border-dashed ${theme.border} ${theme.textMuted} bg-black/5`}>
-                      <Target className="w-24 h-24 mb-6 opacity-30 animate-pulse" />
-                      <p className="text-xl font-bold">اختر لاعباً لفتح غرفة التحليل الخاصة به</p>
+                    <div className={`flex flex-col items-center justify-center h-full min-h-[400px] ${theme.textMuted} text-center`}>
+                      <Target className="w-24 h-24 opacity-20 mb-6 drop-shadow-md animate-pulse" />
+                      <h2 className="font-black text-2xl mb-2 text-current opacity-80">لم يتم اختيار لاعب للتحليل</h2>
+                      <p className="font-bold text-lg opacity-60">استخدم شريط البحث بالأعلى للبحث عن لاعب وعرض رسوماته البيانية.</p>
                     </div>
                   ) : (
                     <>
-                      <div className={`${theme.card} p-6 sm:p-8 rounded-3xl border ${theme.border}`}>
-                        <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4 border-b border-current/10 pb-6">
-                          <div>
-                            <h2 className={`text-2xl font-black mb-2 flex items-center gap-2 ${theme.primaryText}`}>
-                              <Shield className="w-7 h-7" /> البوصلة (مقارنة بالمعايير العالمية)
-                            </h2>
-                            <p className={`text-sm font-medium ${theme.textMuted}`}>توضح نسبة ما يحققه اللاعب مقارنة بالمعايير المثالية لـ (سن {calculateAge(activePlayer?.dob || '')}) للـ ({activePlayer?.gender === 'female' ? 'بنات' : 'أولاد'}).</p>
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 border-b border-current/10 pb-8">
+                        <div>
+                          <h2 className={`text-3xl font-black mb-3 flex items-center gap-3 ${theme.primaryText}`}>
+                            <TrendingUp className="w-8 h-8" /> غرفة التحليل: {activePlayer?.name}
+                          </h2>
+                          <div className={`text-sm font-bold ${theme.textMuted} bg-black/5 px-4 py-1.5 rounded-xl inline-block border border-current/5`}>
+                            {activePlayer?.gender === 'female' ? 'بنت' : 'ولد'} • {activePlayer?.specialty ? `لاعب ${activePlayer.specialty}` : 'عام'} • العمر: {calculateAge(activePlayer?.dob || '')}
                           </div>
-                        </div>
-                        <div className="flex justify-center items-center">
-                          <MemoizedRadarChart records={records} player={activePlayer!} testCategories={testCategories} theme={theme} calculateAge={calculateAge} />
                         </div>
                       </div>
 
-                      <div className={`${theme.card} p-6 sm:p-8 rounded-3xl border ${theme.border}`}>
-                        <h2 className={`text-2xl font-black mb-6 flex items-center gap-2 ${theme.primaryText}`}>
-                          <TrendingUp className="w-7 h-7" /> منحنى التطور الزمني
-                        </h2>
-                        
-                        <div className="flex overflow-x-auto gap-3 pb-4 mb-4 no-scrollbar border-b border-current/10">
-                           <button onClick={() => setChartTab('overall')} className={`flex-shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${chartTab === 'overall' ? theme.primaryBtn : 'bg-black/5 hover:bg-black/10 border border-current/10'}`}>تطور عام</button>
-                           <button onClick={() => setChartTab('speed')} className={`flex-shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${chartTab === 'speed' ? theme.primaryBtn : 'bg-black/5 hover:bg-black/10 border border-current/10'}`}>تطور السرعة</button>
-                           <button onClick={() => setChartTab('jump')} className={`flex-shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${chartTab === 'jump' ? theme.primaryBtn : 'bg-black/5 hover:bg-black/10 border border-current/10'}`}>تطور الوثب</button>
-                           <button onClick={() => setChartTab('power')} className={`flex-shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${chartTab === 'power' ? theme.primaryBtn : 'bg-black/5 hover:bg-black/10 border border-current/10'}`}>تطور القوة</button>
-                           <button onClick={() => setChartTab('specific')} className={`flex-shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${chartTab === 'specific' ? theme.primaryBtn : 'bg-black/5 hover:bg-black/10 border border-current/10'}`}>تفاصيل اختبار محدد</button>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* البوصلة */}
+                        <div className="bg-black/5 p-6 sm:p-8 rounded-3xl border border-current/10">
+                           <h2 className={`text-xl font-black mb-2 flex items-center gap-2 opacity-90`}>
+                             <Shield className="w-6 h-6" /> البوصلة (مقارنة بالمعايير العالمية)
+                           </h2>
+                           <p className={`text-xs font-bold mb-8 opacity-60`}>توضح نسبة ما يحققه اللاعب مقارنة بالمعايير المثالية لـ (سن {calculateAge(activePlayer?.dob || '')}) للـ ({activePlayer?.gender === 'female' ? 'بنات' : 'أولاد'}).</p>
+                           <div className="flex justify-center items-center">
+                             <MemoizedRadarChart records={records} player={activePlayer!} testCategories={testCategories} theme={theme} calculateAge={calculateAge} />
+                           </div>
                         </div>
 
-                        {chartTab === 'specific' && (
-                           <div className={`flex flex-wrap gap-4 mb-8 bg-black/5 p-4 rounded-2xl border ${theme.border}`}>
-                             <div className="flex-1 min-w-[150px]">
-                               <label className={`block text-xs font-bold mb-1.5 ${theme.textMuted}`}>الفئة</label>
-                               <select value={reportCategory} onChange={(e) => setReportCategory(e.target.value)} className={`w-full border ${theme.border} ${theme.inputBg} rounded-xl px-3 py-2 text-sm focus:outline-none ${theme.ring} [&>option]:bg-slate-800 [&>option]:text-white`}>
-                                 {Object.keys(testCategories).map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                               </select>
-                             </div>
-                             <div className="flex-1 min-w-[150px]">
-                               <label className={`block text-xs font-bold mb-1.5 ${theme.textMuted}`}>الاختبار</label>
-                               <select value={reportTest} onChange={(e) => setReportTest(e.target.value)} className={`w-full border ${theme.border} ${theme.inputBg} rounded-xl px-3 py-2 text-sm focus:outline-none ${theme.ring} [&>option]:bg-slate-800 [&>option]:text-white`}>
-                                 {testCategories[reportCategory]?.map((test: string) => <option key={test} value={test}>{test}</option>)}
-                               </select>
-                             </div>
+                        {/* منحنى التطور */}
+                        <div className="bg-black/5 p-6 sm:p-8 rounded-3xl border border-current/10 flex flex-col">
+                           <h2 className={`text-xl font-black mb-6 flex items-center gap-2 opacity-90`}>
+                             <TrendingUp className="w-6 h-6" /> منحنى التطور الزمني
+                           </h2>
+                           
+                           <div className="flex overflow-x-auto gap-3 pb-4 mb-4 border-b border-current/10 no-scrollbar">
+                              <button onClick={() => setChartTab('overall')} className={`flex-shrink-0 px-4 py-2 rounded-xl font-bold text-xs transition-all ${chartTab === 'overall' ? theme.primaryBtn : 'bg-black/5 hover:bg-black/10'}`}>تطور عام</button>
+                              <button onClick={() => setChartTab('speed')} className={`flex-shrink-0 px-4 py-2 rounded-xl font-bold text-xs transition-all ${chartTab === 'speed' ? theme.primaryBtn : 'bg-black/5 hover:bg-black/10'}`}>السرعة</button>
+                              <button onClick={() => setChartTab('jump')} className={`flex-shrink-0 px-4 py-2 rounded-xl font-bold text-xs transition-all ${chartTab === 'jump' ? theme.primaryBtn : 'bg-black/5 hover:bg-black/10'}`}>الوثب</button>
+                              <button onClick={() => setChartTab('power')} className={`flex-shrink-0 px-4 py-2 rounded-xl font-bold text-xs transition-all ${chartTab === 'power' ? theme.primaryBtn : 'bg-black/5 hover:bg-black/10'}`}>القوة</button>
+                              <button onClick={() => setChartTab('specific')} className={`flex-shrink-0 px-4 py-2 rounded-xl font-bold text-xs transition-all ${chartTab === 'specific' ? theme.primaryBtn : 'bg-black/5 hover:bg-black/10'}`}>اختبار محدد</button>
                            </div>
-                        )}
 
-                        <div className="mb-6 bg-black/5 p-4 rounded-2xl border border-current/10">
-                          <MemoizedProgressChart 
-                             records={records} 
-                             player={activePlayer!} 
-                             chartTab={chartTab}
-                             reportCategory={reportCategory}
-                             reportTest={reportTest}
-                             theme={theme}
-                             calculateAge={calculateAge}
-                          />
+                           {chartTab === 'specific' && (
+                              <div className={`flex gap-4 mb-6`}>
+                                <select value={reportCategory} onChange={(e) => setReportCategory(e.target.value)} className={`flex-1 border ${theme.border} ${theme.inputBg} rounded-xl px-3 py-2 text-xs font-bold focus:outline-none ${theme.ring} [&>option]:bg-slate-800 [&>option]:text-white`}>
+                                  {Object.keys(testCategories).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                </select>
+                                <select value={reportTest} onChange={(e) => setReportTest(e.target.value)} className={`flex-1 border ${theme.border} ${theme.inputBg} rounded-xl px-3 py-2 text-xs font-bold focus:outline-none ${theme.ring} [&>option]:bg-slate-800 [&>option]:text-white`}>
+                                  {testCategories[reportCategory]?.map((test: string) => <option key={test} value={test}>{test}</option>)}
+                                </select>
+                              </div>
+                           )}
+
+                           <div className="flex-grow flex items-center justify-center">
+                             <MemoizedProgressChart 
+                                records={records} 
+                                player={activePlayer!} 
+                                chartTab={chartTab}
+                                reportCategory={reportCategory}
+                                reportTest={reportTest}
+                                theme={theme}
+                                calculateAge={calculateAge}
+                                testCategories={testCategories}
+                             />
+                           </div>
                         </div>
                       </div>
                     </>
                   )}
-                </div>
               </div>
             )}
 
-            {/* ================== شاشة لوحة المراجع الديناميكية ================== */}
+            {/* ================== شاشة لوحة المراجع الديناميكية (Benchmarks Table) ================== */}
             {currentView === 'reference' && (
               <div className={`${theme.card} p-6 sm:p-8 rounded-3xl border ${theme.border}`}>
                 <div className="mb-8 border-b border-current/10 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -772,6 +784,7 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* بوكس شرح المعادلة */}
                 <div className="mb-8 bg-blue-500/10 border border-blue-500/30 p-5 rounded-2xl">
                   <h4 className="font-bold flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400"><Info className="w-5 h-5"/> كيف يتم حساب الأرقام لسن {benchmarkAge}؟</h4>
                   <p className="text-sm opacity-80 mb-2">التطبيق يمتلك قاعدة بيانات للبالغين (20 سنة فأكثر)، ويقوم بضربها في مُعامل (Age Factor) لتقليل أو زيادة التارجت حسب السن.</p>
@@ -782,6 +795,7 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* جدول الأولاد الديناميكي */}
                   <div className="bg-black/5 p-4 rounded-2xl border border-current/10">
                     <h3 className="font-black text-xl mb-4 text-blue-500 border-b border-current/10 pb-2">التارجت - أولاد</h3>
                     <div className="overflow-x-auto no-scrollbar">
@@ -809,6 +823,7 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* جدول البنات الديناميكي */}
                   <div className="bg-black/5 p-4 rounded-2xl border border-current/10">
                     <h3 className="font-black text-xl mb-4 text-pink-500 border-b border-current/10 pb-2">التارجت - بنات</h3>
                     <div className="overflow-x-auto no-scrollbar">
@@ -1016,7 +1031,7 @@ function RadarChart({ records, player, testCategories, theme, calculateAge }: { 
   );
 }
 
-function ProgressChart({ records, player, chartTab, reportCategory, reportTest, theme, calculateAge }: any) {
+function ProgressChart({ records, player, chartTab, reportCategory, reportTest, theme, calculateAge, testCategories }: any) {
   const { pathData, points, height, isSpeedMode } = useMemo(() => {
     const age = calculateAge(player.dob || '');
     const gender = player.gender || 'male';
@@ -1101,7 +1116,7 @@ function ProgressChart({ records, player, chartTab, reportCategory, reportTest, 
   if (points.length < 2) {
     return (
       <div className={`h-[200px] w-full flex items-center justify-center rounded-xl border border-dashed border-current/20 bg-black/5`}>
-        <p className={`text-sm font-bold opacity-70`}>يجب تسجيل بيانات في يومين مختلفين على الأقل لظهور المنحنى</p>
+        <p className={`text-sm font-bold opacity-70 text-center px-4`}>يجب تسجيل بيانات في يومين مختلفين على الأقل لظهور منحنى التطور</p>
       </div>
     );
   }
